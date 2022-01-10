@@ -1,50 +1,53 @@
 from __future__ import annotations
-from typing import Iterable, Sequence
+from typing import Iterable
 
 
 class Sudoku:
     """A mutable sudoku puzzle."""
 
     def __init__(self, puzzle: Iterable[Iterable]):
-        self._grid: list[str] = []
-
+        self._grid = []
         for puzzle_row in puzzle:
-            row = ""
-
             for element in puzzle_row:
-                row += str(element)
+                self._grid.append([int(element)])
 
-            self._grid.append(row)
+        self.rows = []
+        for y in range(9):
+            row = []
+            for x in range(9):
+                row.append(self._grid[x+9*y])
+            self.rows.append(row)
+
+        self.columns = []
+        for x in range(9):
+            column = []
+            for y in range(9):
+                column.append(self._grid[x+9*y])
+            self.columns.append(column)
+
+        self.blocks = []
+        for i in range(9):
+            block = []
+            x_start = (i % 3) * 3
+            y_start = (i // 3) * 3
+            for x in range(x_start, x_start + 3):
+                for y in range(y_start, y_start + 3):
+                    block.append(self._grid[x+9*y])
+            self.blocks.append(block)
 
     def place(self, value: int, x: int, y: int) -> None:
         """Place value at x,y."""
-        row = self._grid[y]
-        new_row = ""
-
-        for i in range(9):
-            if i == x:
-                new_row += str(value)
-            else:
-                new_row += row[i]
-
-        self._grid[y] = new_row
+        self._grid[x+9*y][0] = value
 
     def unplace(self, x: int, y: int) -> None:
         """Remove (unplace) a number at x,y."""
-        row = self._grid[y]
-        new_row = row[:x] + "0" + row[x + 1:]
-        self._grid[y] = new_row
+        self._grid[x+9*y][0] = 0
 
     def value_at(self, x: int, y: int) -> int:
         """Returns the value at x,y."""
         value = -1
-
-        for i in range(9):
-            for j in range(9):
-                if i == x and j == y:
-                    row = self._grid[y]
-                    value = int(row[x])
-
+        if x < 9 and y < 9 and x >= 0 and y >= 0:
+            value = self._grid[x+9*y][0]
         return value
 
     def options_at(self, x: int, y: int) -> Iterable[int]:
@@ -87,21 +90,11 @@ class Sudoku:
 
     def row_values(self, i: int) -> Iterable[int]:
         """Returns all values at i-th row."""
-        values = []
-
-        for j in range(9):
-            values.append(self.value_at(j, i))
-
-        return values
+        return sum(self.rows[i], [])
 
     def column_values(self, i: int) -> Iterable[int]:
         """Returns all values at i-th column."""
-        values = []
-
-        for j in range(9):
-            values.append(self.value_at(i, j))
-
-        return values
+        return sum(self.columns[i], [])
 
     def block_values(self, i: int) -> Iterable[int]:
         """
@@ -111,21 +104,12 @@ class Sudoku:
         3 4 5
         6 7 8
         """
-        values = []
-
-        x_start = (i % 3) * 3
-        y_start = (i // 3) * 3
-
-        for x in range(x_start, x_start + 3):
-            for y in range(y_start, y_start + 3):
-                values.append(self.value_at(x, y))
-
-        return values
+        return sum(self.blocks[i], [])
 
     def block_index_of(self, x: int, y: int) -> int:
         """Returns the index of a block from an index (x,y)."""
         return (y // 3) * 3 + x // 3
-        
+
     def is_solved(self) -> bool:
         """
         Returns True if and only if all rows, columns and blocks contain
@@ -151,7 +135,9 @@ class Sudoku:
     def __str__(self) -> str:
         representation = ""
 
-        for row in self._grid:
+        for i in range(9):
+            row = sum(self.rows[i], [])
+            row = "".join(str(e) for e in row)
             representation += row + "\n"
 
         return representation.strip()
